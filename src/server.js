@@ -1,14 +1,24 @@
+// ------------------------------ Imports ------------------------------
+
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
-import { Server } from "socket.io";
-import { createServer } from "http";
 import dotenv from "dotenv";
-// import { socketHandler } from "./socket/index.js";
+import usersRouter from "./api/endpoints/users.js";
+import gamesRouter from "./api/endpoints/games.js";
+import {
+  genericErrorHandler,
+  notFoundHandler,
+  badRequestHandler,
+  unauthorizedHandler,
+  forbiddenErrorHandler
+} from "./auth/errorHandlers.js";
+
+// ------------------------------ Server ------------------------------
 
 dotenv.config();
 const server = express();
-const port = process.env.PORT || 3001;
+
+// ------------------------------ MiddleWares ------------------------------
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -20,28 +30,17 @@ const corsOptions = {
 server.use(cors(corsOptions));
 server.use(express.json());
 
-const httpServer = createServer(server);
+// ------------------------------ Routes ------------------------------
 
-// const io = new Server(httpServer, {
-//   cors: {
-//     origin: "http://localhost:3000",
-//     methods: ["GET", "POST"],
-//     credentials: true
-//   }
-// });
-// socketHandler(io);
+server.use("/users", usersRouter);
+server.use("/games", gamesRouter);
 
-mongoose
-  .connect(process.env.MONGO_CONNECTION, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => {
-    console.log("Connected to Mongo!");
-    httpServer.listen(port, () => {
-      console.log("Server running on port", port);
-    });
-  })
-  .catch((error) => {
-    console.error("Error connecting to MongoDB:", error.message);
-  });
+// ------------------------------ Error Handlers ------------------------------
+
+server.use(badRequestHandler);
+server.use(unauthorizedHandler);
+server.use(forbiddenErrorHandler);
+server.use(notFoundHandler);
+server.use(genericErrorHandler);
+
+export default server;
