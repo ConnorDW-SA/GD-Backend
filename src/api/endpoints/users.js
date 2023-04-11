@@ -28,12 +28,7 @@ usersRouter.post("/login", async (req, res, next) => {
     if (user) {
       const payload = { _id: user._id };
       const accessToken = await createAccessToken(payload);
-      res.send({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        accessToken
-      });
+      res.send({ user, accessToken });
     } else {
       next(createError(401, "Invalid email or password"));
     }
@@ -64,12 +59,7 @@ usersRouter.post("/register", async (req, res, next) => {
     const { _id } = await newUser.save();
     const payload = { _id: newUser._id };
     const accessToken = await createAccessToken(payload);
-    res.status(201).send({
-      _id: newUser._id,
-      username: newUser.username,
-      email: newUser.email,
-      accessToken
-    });
+    res.status(201).send({ newUser, accessToken });
   } catch (error) {
     next(error);
   }
