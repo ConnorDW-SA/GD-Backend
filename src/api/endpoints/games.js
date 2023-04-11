@@ -1,13 +1,14 @@
 import express from "express";
 import createError from "http-errors";
 import GameModel from "../models/games.js";
+import UserModel from "../models/users.js";
 import { jwtAuthMiddleware } from "../../auth/Auth.js";
 
 const gamesRouter = express.Router();
 
 // Get games
 
-gamesRouter.get("/", jwtAuthMiddleware, async (req, res, next) => {
+gamesRouter.get("/userGames", jwtAuthMiddleware, async (req, res, next) => {
   try {
     const games = await GameModel.find({
       $or: [{ player1: req.user._id }, { player2: req.user._id }]
@@ -20,12 +21,25 @@ gamesRouter.get("/", jwtAuthMiddleware, async (req, res, next) => {
 
 // Create game
 
-gamesRouter.post("/", jwtAuthMiddleware, async (req, res, next) => {
+gamesRouter.post("/createGame", jwtAuthMiddleware, async (req, res, next) => {
   try {
     const { player2 } = req.body;
     const player2User = await UserModel.findById(player2);
     if (!player2User) {
       return res.status(404).send({ error: "Player 2 not found" });
+    }
+    const existingGame = await GameModel.findOne({
+      $or: [
+        { player1: req.user._id, player2 },
+        { player1: player2, player2: req.user._id }
+      ]
+    });
+
+    if (existingGame) {
+      console.log("A game between these players already exists");
+      return res
+        .status(400)
+        .send({ error: "A game between these players already exists" });
     }
 
     const newGame = new GameModel({ player1: req.user._id, player2 });

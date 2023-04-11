@@ -9,9 +9,10 @@ const usersRouter = express.Router();
 
 // Get users
 
-usersRouter.get("/users", jwtAuthMiddleware, async (req, res, next) => {
+usersRouter.get("/allUsers", jwtAuthMiddleware, async (req, res, next) => {
   try {
-    const users = await UserModel.find();
+    const currentUser = await UserModel.findById(req.user._id);
+    const users = await UserModel.find({ _id: { $ne: currentUser._id } });
     res.send(users.map((user) => user.toJSON()));
   } catch (error) {
     next(error);
@@ -59,7 +60,7 @@ usersRouter.post("/register", async (req, res, next) => {
     const { _id } = await newUser.save();
     const payload = { _id: newUser._id };
     const accessToken = await createAccessToken(payload);
-    res.status(201).send({ newUser, accessToken });
+    res.status(201).send({ user: newUser, accessToken });
   } catch (error) {
     next(error);
   }
