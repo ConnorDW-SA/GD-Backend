@@ -53,6 +53,7 @@ gamesRouter.post("/createGame", jwtAuthMiddleware, async (req, res, next) => {
 // Get game by id
 
 gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
+  console.log("Request received for game ID:", req.params.gameId);
   try {
     const game = await GameModel.findOne({
       _id: req.params.gameId,
@@ -61,6 +62,7 @@ gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
 
     if (game) {
       res.send(game);
+      console.log(game);
     } else {
       next(createError(404, "Game not found"));
     }
@@ -68,6 +70,8 @@ gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
     next(error);
   }
 });
+
+//
 
 // Update game by id
 
@@ -84,6 +88,7 @@ gamesRouter.put("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
 
     if (updatedGame) {
       res.send(updatedGame);
+      console.log("Game updated");
     } else {
       next(createError(404, "Game not found"));
     }
