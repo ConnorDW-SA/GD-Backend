@@ -88,7 +88,7 @@ gamesRouter.put("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
 
     if (updatedGame) {
       res.send(updatedGame);
-      console.log("Game updated");
+      console.log("User successfuly updated game");
     } else {
       next(createError(404, "Game not found"));
     }
