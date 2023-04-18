@@ -29,18 +29,34 @@ const GameSchema = new mongoose.Schema(
     },
     boardState: {
       type: {
-        whiteRooks: [{ type: String, required: true }],
-        whiteKnights: [{ type: String, required: true }],
-        whiteBishops: [{ type: String, required: true }],
-        whiteQueen: [{ type: String, required: true }],
-        whiteKing: [{ type: String, required: true }],
-        whitePawns: [{ type: String, required: true }],
-        blackRooks: [{ type: String, required: true }],
-        blackKnights: [{ type: String, required: true }],
-        blackBishops: [{ type: String, required: true }],
-        blackQueen: [{ type: String, required: true }],
-        blackKing: [{ type: String, required: true }],
-        blackPawns: [{ type: String, required: true }]
+        whiteRooks: [
+          {
+            position: { type: String, required: true },
+            hasMoved: { type: Boolean, default: false }
+          }
+        ],
+        whiteKnights: [{ position: { type: String, required: true } }],
+        whiteBishops: [{ position: { type: String, required: true } }],
+        whiteQueen: [{ position: { type: String, required: true } }],
+        whiteKing: {
+          position: { type: String, required: true },
+          hasMoved: { type: Boolean, default: false }
+        },
+        whitePawns: [{ position: { type: String, required: true } }],
+        blackRooks: [
+          {
+            position: { type: String, required: true },
+            hasMoved: { type: Boolean, default: false }
+          }
+        ],
+        blackKnights: [{ position: { type: String, required: true } }],
+        blackBishops: [{ position: { type: String, required: true } }],
+        blackQueen: [{ position: { type: String, required: true } }],
+        blackKing: {
+          position: { type: String, required: true },
+          hasMoved: { type: Boolean, default: false }
+        },
+        blackPawns: [{ position: { type: String, required: true } }]
       },
       required: true,
       default: initialBoardState
