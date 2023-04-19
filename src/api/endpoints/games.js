@@ -77,21 +77,37 @@ gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
 
 gamesRouter.put("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
   try {
+    const game = await GameModel.findOne({
+      _id: req.params.gameId,
+      $or: [{ player1: req.user._id }, { player2: req.user._id }]
+    });
+
+    if (!game) {
+      next(createError(404, "Game not found"));
+      return;
+    }
+
+    const currentPlayer =
+      game.currentPlayer.toString() === game.player1.toString()
+        ? game.player2
+        : game.player1;
+
+    if (
+      req.body.currentPlayer !==
+      (game.currentPlayer.color || req.body.currentPlayer)
+    ) {
+      next(createError(400, "Invalid current player value"));
+      return;
+    }
+
     const updatedGame = await GameModel.findOneAndUpdate(
-      {
-        _id: req.params.gameId,
-        $or: [{ player1: req.user._id }, { player2: req.user._id }]
-      },
-      req.body,
+      { _id: req.params.gameId },
+      { ...req.body, currentPlayer },
       { new: true, runValidators: true }
     );
 
-    if (updatedGame) {
-      res.send(updatedGame);
-      console.log("User successfuly updated game");
-    } else {
-      next(createError(404, "Game not found"));
-    }
+    res.send(updatedGame);
+    console.log("User successfully updated game");
   } catch (error) {
     next(error);
   }

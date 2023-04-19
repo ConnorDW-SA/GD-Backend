@@ -1,19 +1,47 @@
 import mongoose from "mongoose";
 
-const initialBoardState = {
-  whiteRooks: ["a1", "h1"],
-  whiteKnights: ["b1", "g1"],
-  whiteBishops: ["c1", "f1"],
-  whiteQueen: ["d1"],
-  whiteKing: ["e1"],
-  whitePawns: ["a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2"],
-  blackRooks: ["a8", "h8"],
-  blackKnights: ["b8", "g8"],
-  blackBishops: ["c8", "f8"],
-  blackQueen: ["d8"],
-  blackKing: ["e8"],
-  blackPawns: ["a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"]
-};
+const initialBoardState = [
+  { type: "rook", color: "white", position: "a1", hasMoved: false },
+  { type: "knight", color: "white", position: "b1" },
+  { type: "bishop", color: "white", position: "c1" },
+  { type: "queen", color: "white", position: "d1" },
+  { type: "king", color: "white", position: "e1", hasMoved: false },
+  { type: "bishop", color: "white", position: "f1" },
+  { type: "knight", color: "white", position: "g1" },
+  { type: "rook", color: "white", position: "h1", hasMoved: false },
+  { type: "pawn", color: "white", position: "a2" },
+  { type: "pawn", color: "white", position: "b2" },
+  { type: "pawn", color: "white", position: "c2" },
+  { type: "pawn", color: "white", position: "d2" },
+  { type: "pawn", color: "white", position: "e2" },
+  { type: "pawn", color: "white", position: "f2" },
+  { type: "pawn", color: "white", position: "g2" },
+  { type: "pawn", color: "white", position: "h2" },
+
+  { type: "rook", color: "black", position: "a8", hasMoved: false },
+  { type: "knight", color: "black", position: "b8" },
+  { type: "bishop", color: "black", position: "c8" },
+  { type: "queen", color: "black", position: "d8" },
+  { type: "king", color: "black", position: "e8", hasMoved: false },
+  { type: "bishop", color: "black", position: "f8" },
+  { type: "knight", color: "black", position: "g8" },
+  { type: "rook", color: "black", position: "h8", hasMoved: false },
+  { type: "pawn", color: "black", position: "a7" },
+  { type: "pawn", color: "black", position: "b7" },
+  { type: "pawn", color: "black", position: "c7" },
+  { type: "pawn", color: "black", position: "d7" },
+  { type: "pawn", color: "black", position: "e7" },
+  { type: "pawn", color: "black", position: "f7" },
+  { type: "pawn", color: "black", position: "g7" },
+  { type: "pawn", color: "black", position: "h7" }
+];
+
+const PieceSchema = new mongoose.Schema({
+  type: { type: String, required: true },
+  color: { type: String, required: true },
+  position: { type: String, required: true },
+  hasMoved: { type: Boolean, default: false }
+});
 
 const GameSchema = new mongoose.Schema(
   {
@@ -28,36 +56,7 @@ const GameSchema = new mongoose.Schema(
       required: true
     },
     boardState: {
-      type: {
-        whiteRooks: [
-          {
-            position: { type: String, required: true },
-            hasMoved: { type: Boolean, default: false }
-          }
-        ],
-        whiteKnights: [{ position: { type: String, required: true } }],
-        whiteBishops: [{ position: { type: String, required: true } }],
-        whiteQueen: [{ position: { type: String, required: true } }],
-        whiteKing: {
-          position: { type: String, required: true },
-          hasMoved: { type: Boolean, default: false }
-        },
-        whitePawns: [{ position: { type: String, required: true } }],
-        blackRooks: [
-          {
-            position: { type: String, required: true },
-            hasMoved: { type: Boolean, default: false }
-          }
-        ],
-        blackKnights: [{ position: { type: String, required: true } }],
-        blackBishops: [{ position: { type: String, required: true } }],
-        blackQueen: [{ position: { type: String, required: true } }],
-        blackKing: {
-          position: { type: String, required: true },
-          hasMoved: { type: Boolean, default: false }
-        },
-        blackPawns: [{ position: { type: String, required: true } }]
-      },
+      type: [PieceSchema],
       required: true,
       default: initialBoardState
     },
