@@ -1,47 +1,26 @@
-import UserModel from "../api/models/users.js";
-
-let onlineUsers = [];
-
 export const newConnectionHandler = (newClient) => {
   console.log("NEW CONNECTION:", newClient.id);
+  newClient.emit("welcome", { message: `Hello ${newClient.id}` });
 
-  newClient.on("setUserId", async (payload) => {
-    console.log(payload);
-    onlineUsers.push({ userId: payload.userId, socketId: newClient.id });
+  newClient.on("join game", (gameId) => {
+    console.log(`Client ${newClient.id} joined game ${gameId}`);
+    newClient.join(gameId);
+    newClient.to(gameId).emit("player joined", { playerId: newClient.id });
+  });
 
-    const allUsers = await UserModel.find(
-      { _id: { $ne: payload.userId } },
-      { _id: 1 }
+  newClient.on("player move", ({ gameId, moveInfo }) => {
+    console.log(
+      `Client ${newClient.id} made a move in game ${gameId}. Current turn: ${moveInfo.currentTurn}`
     );
+    newClient.to(gameId).emit("opponent move", moveInfo);
+  });
 
-    const filterOnlineOfflineUsers = (allUsers, onlineUsers) => {
-      const onlineUsersIds = onlineUsers.map((user) => user.userId);
-      const offlineUsers = allUsers.filter(
-        (user) => !onlineUsersIds.includes(user._id.toString())
-      );
-
-      return { onlineUsers, offlineUsers };
-    };
-
-    const { onlineUsers: onlineList, offlineUsers } = filterOnlineOfflineUsers(
-      allUsers,
-      onlineUsers
-    );
-
-    newClient.emit("loggedIn", { onlineUsers: onlineList, offlineUsers });
-
-    const { onlineUsers: updatedOnlineList, offlineUsers: updatedOfflineList } =
-      filterOnlineOfflineUsers(allUsers, onlineUsers);
-
-    newClient.broadcast.emit("updateOnlineUsersList", {
-      onlineUsers: updatedOnlineList,
-      offlineUsers: updatedOfflineList
-    });
+  newClient.on("make move", ({ gameId, move }) => {
+    console.log(`Client ${newClient.id} made move ${move} in game ${gameId}`);
+    newClient.to(gameId).emit("opponent move", { move });
   });
 
   newClient.on("disconnect", () => {
-    onlineUsers = onlineUsers.filter((user) => user.socketId !== newClient.id);
-    newClient.broadcast.emit("updateOnlineUsersList", onlineUsers);
-    console.log("DISCONNECTED:", newClient.id);
+    newClient.broadcast.emit("User disconnected");
   });
 };

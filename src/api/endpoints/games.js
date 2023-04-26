@@ -62,7 +62,6 @@ gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
 
     if (game) {
       res.send(game);
-      console.log(game);
     } else {
       next(createError(404, "Game not found"));
     }

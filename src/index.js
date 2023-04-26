@@ -9,12 +9,19 @@ import { newConnectionHandler } from "./socket/socket.js";
 
 // ------------------------------ Server ------------------------------
 
-const port = process.env.PORT || 3003;
+const port = process.env.PORT || 3001;
 
 // ------------------------------ Socket ------------------------------
 
 const httpServer = createServer(server);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "PUT", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  }
+});
 io.on("connection", newConnectionHandler);
 
 // ------------------------------ DB ------------------------------
