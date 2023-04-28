@@ -19,6 +19,10 @@ usersRouter.get("/allUsers", jwtAuthMiddleware, async (req, res, next) => {
   }
 });
 
+// Get user by ID
+
+
+
 // Login
 
 usersRouter.post("/login", async (req, res, next) => {

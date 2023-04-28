@@ -67,7 +67,17 @@ const GameSchema = new mongoose.Schema(
       default: function () {
         return this.player1;
       }
-    }
+    },
+    moveHistory: [
+      {
+        from: { type: String, required: true },
+        to: { type: String, required: true },
+        piece: { type: String, required: true },
+        color: { type: String, enum: ["white", "black"], required: true },
+        capturedPiece: { type: String },
+        promotion: { type: String }
+      }
+    ]
   },
   { timestamps: true }
 );
@@ -85,13 +95,3 @@ export default mongoose.model("Game", GameSchema);
 //   enum: ["white", "black", "draw", null],
 //   default: null
 // },
-// moveHistory: [
-//   {
-//     from: { type: String, required: true },
-//     to: { type: String, required: true },
-//     piece: { type: String, required: true },
-//     color: { type: String, enum: ["white", "black"], required: true },
-//     capturedPiece: { type: String },
-//     promotion: { type: String }
-//   }
-// ]
