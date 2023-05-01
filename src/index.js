@@ -9,7 +9,7 @@ import { newConnectionHandler } from "./socket/socket.js";
 
 // ------------------------------ Server ------------------------------
 
-const port = process.env.PORT || 3002;
+const port = process.env.PORT || 3001;
 
 // ------------------------------ Socket ------------------------------
 

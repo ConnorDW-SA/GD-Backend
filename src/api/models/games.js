@@ -74,7 +74,6 @@ const GameSchema = new mongoose.Schema(
         to: { type: String, required: true },
         piece: { type: String, required: true },
         color: { type: String, enum: ["white", "black"], required: true },
-        capturedPiece: { type: String },
         promotion: { type: String }
       }
     ]
