@@ -67,16 +67,7 @@ const GameSchema = new mongoose.Schema(
       default: function () {
         return this.player1;
       }
-    },
-    moveHistory: [
-      {
-        from: { type: String, required: true },
-        to: { type: String, required: true },
-        piece: { type: String, required: true },
-        color: { type: String, enum: ["white", "black"], required: true },
-        promotion: { type: String }
-      }
-    ]
+    }
   },
   { timestamps: true }
 );
