@@ -58,7 +58,7 @@ gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
     const game = await GameModel.findOne({
       _id: req.params.gameId,
       $or: [{ player1: req.user._id }, { player2: req.user._id }]
-    });
+    }).populate("player1 player2");
 
     if (game) {
       res.send(game);
