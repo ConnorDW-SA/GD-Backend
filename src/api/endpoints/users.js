@@ -3,6 +3,9 @@ import createError from "http-errors";
 import UserModel from "../models/users.js";
 import { createAccessToken } from "../../auth/tools.js";
 import { jwtAuthMiddleware } from "../../auth/Auth.js";
+import GameModel from "../models/games.js";
+import mongoose from "mongoose";
+
 // import q2m from "query-to-mongo";
 
 const usersRouter = express.Router();
@@ -11,8 +14,24 @@ const usersRouter = express.Router();
 
 usersRouter.get("/allUsers", jwtAuthMiddleware, async (req, res, next) => {
   try {
-    const currentUser = await UserModel.findById(req.user._id);
-    const users = await UserModel.find({ _id: { $ne: currentUser._id } });
+    const currentUserID = req.user._id;
+    const games = await GameModel.find({
+      $or: [
+        { player1: new mongoose.Types.ObjectId(currentUserID) },
+        { player2: new mongoose.Types.ObjectId(currentUserID) }
+      ]
+    });
+    const usersWithExistingGames = games.map((game) =>
+      game.player1.toString() === currentUserID
+        ? game.player2.toString()
+        : game.player1.toString()
+    );
+    const users = await UserModel.find({
+      _id: {
+        $ne: currentUserID,
+        $nin: usersWithExistingGames
+      }
+    });
     res.send(users.map((user) => user.toJSON()));
   } catch (error) {
     next(error);
@@ -20,8 +39,6 @@ usersRouter.get("/allUsers", jwtAuthMiddleware, async (req, res, next) => {
 });
 
 // Get user by ID
-
-
 
 // Login
 
