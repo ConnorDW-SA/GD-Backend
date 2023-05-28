@@ -1,25 +1,34 @@
 // ------------------------------ Imports ------------------------------
-
 import express from "express";
 import cors from "cors";
+import { Server } from "socket.io";
+import { createServer } from "http";
+import { socketHandler } from "./socket/socket.js";
+import listEndpoints from "express-list-endpoints";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { errorHandler } from "./auth/errorHandlers.js";
 import usersRouter from "./api/endpoints/users.js";
 import gamesRouter from "./api/endpoints/games.js";
-import {
-  genericErrorHandler,
-  notFoundHandler,
-  badRequestHandler,
-  unauthorizedHandler,
-  forbiddenErrorHandler
-} from "./auth/errorHandlers.js";
 
-// ------------------------------ Server ------------------------------
-
+// ------------------------------ Server and Config ------------------------------
 dotenv.config();
-const server = express();
+const expressServer = express();
+const httpServer = createServer(expressServer);
+const port = process.env.PORT || 3001;
 
-// ------------------------------ MiddleWares ------------------------------
+// ------------------------------ Socket.io ------------------------------
+export const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "PUT", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  }
+});
+io.on("connection", socketHandler);
 
+// ------------------------------ Middlewares ------------------------------
 const corsOptions = {
   origin: "http://localhost:3000",
   optionSuccessStatus: 200,
@@ -27,21 +36,32 @@ const corsOptions = {
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "Content-Type,Authorization"
 };
+expressServer.use(cors(corsOptions));
+expressServer.use(express.json({ limit: "5mb" }));
 
-server.use(cors(corsOptions));
-server.use(express.json({ limit: "5mb" }));
+expressServer.use("/users", usersRouter);
+expressServer.use("/games", gamesRouter);
+expressServer.use(errorHandler);
 
-// ------------------------------ Routes ------------------------------
+// ------------------------------ Database Connection and Server Start ------------------------------
 
-server.use("/users", usersRouter);
-server.use("/games", gamesRouter);
+mongoose
+  .connect(process.env.MONGO_CONNECTION)
+  .then(() => {
+    console.log("Connected to Mongo!");
+    httpServer.listen(port, () => {
+      console.log("Server running on port", port);
+      console.table(listEndpoints(expressServer));
+    });
+  })
+  .catch((error) => {
+    console.error("Error connecting to MongoDB:", error.message);
+  });
 
-// ------------------------------ Error Handlers ------------------------------
+process.on("SIGINT", function () {
+  console.log("\nGracefully shutting down from SIGINT (Ctrl+C)");
 
-server.use(badRequestHandler);
-server.use(unauthorizedHandler);
-server.use(forbiddenErrorHandler);
-server.use(notFoundHandler);
-server.use(genericErrorHandler);
-
-export default server;
+  httpServer.close(() => {
+    console.log("Http server closed.");
+  });
+});

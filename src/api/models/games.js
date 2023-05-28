@@ -73,15 +73,3 @@ const GameSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("Game", GameSchema);
-
-// status: {
-//   type: String,
-//   enum: ["in-progress", "finished"],
-//   required: true,
-//   default: "in-progress"
-// },
-// winner: {
-//   type: String,
-//   enum: ["white", "black", "draw", null],
-//   default: null
-// },

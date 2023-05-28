@@ -6,101 +6,80 @@ import { jwtAuthMiddleware } from "../../auth/Auth.js";
 import GameModel from "../models/games.js";
 import mongoose from "mongoose";
 
-// import q2m from "query-to-mongo";
-
+// -------------------------- ROUTER -------------------------------------
 const usersRouter = express.Router();
 
-// Get users
+export default usersRouter
 
-usersRouter.get("/allUsers", jwtAuthMiddleware, async (req, res, next) => {
-  try {
-    const currentUserID = req.user._id;
-    const games = await GameModel.find({
-      $or: [
-        { player1: new mongoose.Types.ObjectId(currentUserID) },
-        { player2: new mongoose.Types.ObjectId(currentUserID) }
-      ]
-    });
-    const usersWithExistingGames = games.map((game) =>
-      game.player1.toString() === currentUserID
-        ? game.player2.toString()
-        : game.player1.toString()
-    );
-    const users = await UserModel.find({
-      _id: {
-        $ne: currentUserID,
-        $nin: usersWithExistingGames
+  // -------------------------- GET USERS -------------------------------------
+  .get("/allUsers", jwtAuthMiddleware, async (req, res, next) => {
+    try {
+      const currentUserID = req.user?._id;
+      const games = await GameModel.find({
+        $or: [
+          { player1: new mongoose.Types.ObjectId(currentUserID) },
+          { player2: new mongoose.Types.ObjectId(currentUserID) }
+        ]
+      });
+      const usersWithExistingGames = games.map((game) =>
+        game.player1.toString() === currentUserID
+          ? game.player2.toString()
+          : game.player1.toString()
+      );
+      const users = await UserModel.find({
+        _id: {
+          $ne: currentUserID,
+          $nin: usersWithExistingGames
+        }
+      });
+      res.send(users.map((user) => user.toJSON()));
+    } catch (error) {
+      next(error);
+    }
+  })
+
+  // -------------------------- LOGIN -------------------------------------
+  .post("/login", async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+      const user = await UserModel.checkCredentials(email, password);
+
+      if (user) {
+        const payload = { _id: user._id };
+        const accessToken = await createAccessToken(payload);
+        res.send({ user, accessToken });
+        console.log(user.email, "logged in");
+      } else {
+        next(createError(401, "Invalid email or password"));
       }
-    });
-    res.send(users.map((user) => user.toJSON()));
-  } catch (error) {
-    next(error);
-  }
-});
+    } catch (error) {
+      next(error);
+    }
+  })
 
-// Get user by ID
+  // -------------------------- REGISTER -------------------------------------
+  .post("/register", async (req, res, next) => {
+    try {
+      const { username, password, email } = req.body;
+      const existingUser = await UserModel.findOne({
+        $or: [{ email }, { username }]
+      });
 
-// Login
-
-usersRouter.post("/login", async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    const user = await UserModel.checkCredentials(email, password);
-
-    if (user) {
-      const payload = { _id: user._id };
+      if (existingUser) {
+        return res
+          .status(400)
+          .send({ error: "Email or username already in use" });
+      }
+      const newUser = new UserModel({
+        username,
+        password,
+        email
+      });
+      const { _id } = await newUser.save();
+      const payload = { _id: newUser._id };
       const accessToken = await createAccessToken(payload);
-      res.send({ user, accessToken });
-    } else {
-      next(createError(401, "Invalid email or password"));
+      res.status(201).send({ user: newUser, accessToken });
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Register
-
-usersRouter.post("/register", async (req, res, next) => {
-  try {
-    const { username, password, email } = req.body;
-    const existingUser = await UserModel.findOne({
-      $or: [{ email }, { username }]
-    });
-
-    if (existingUser) {
-      return res
-        .status(400)
-        .send({ error: "Email or username already in use" });
-    }
-    const newUser = new UserModel({
-      username,
-      password,
-      email
-    });
-    const { _id } = await newUser.save();
-    const payload = { _id: newUser._id };
-    const accessToken = await createAccessToken(payload);
-    res.status(201).send({ user: newUser, accessToken });
-  } catch (error) {
-    next(error);
-  }
-});
-
-//Q2M
-
-// usersRouter.get("/", jwtAuthMiddleware, async (req, res, next) => {
-//   try {
-//     const query = q2m(req.query);
-//     const total = await UserModel.countDocuments(query.criteria);
-//     const users = await UserModel.find(query.criteria, query.options.fields)
-//       .skip(query.options.skip)
-//       .limit(query.options.limit)
-//       .sort(query.options.sort);
-//     res.send({ links: query.links("/users", total), total, users });
-//   } catch (error) {
-//     next(error);
-//   }
-// });
-
-export default usersRouter;
+  });

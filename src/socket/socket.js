@@ -1,23 +1,22 @@
-export const newConnectionHandler = (newClient) => {
+import GameModel from "../api/models/games.js";
+
+export const socketHandler = (newClient) => {
   console.log("NEW CONNECTION:", newClient.id);
-  newClient.emit("welcome", { message: `Hello ${newClient.id}` });
 
-  newClient.on("join game", (gameId) => {
-    console.log(`Client ${newClient.id} joined game ${gameId}`);
+  newClient.on("fetch_game", (gameId) => {
+    console.log(`Client ${newClient.id} fetched game ${gameId}`);
     newClient.join(gameId);
-    newClient.to(gameId).emit("player joined", { playerId: newClient.id });
   });
 
-  newClient.on("player move", ({ gameId, moveInfo }) => {
-    console.log(
-      `Client ${newClient.id} made a move in game ${gameId}. Current turn: ${moveInfo.currentTurn}`
-    );
-    newClient.to(gameId).emit("opponent move", moveInfo);
-  });
+  newClient.on("move", async (gameId, newGameState) => {
+    console.log(`Client ${newClient.id} updated game ${gameId}`);
+    await GameModel.updateOne({ _id: gameId }, newGameState);
 
-  newClient.on("make move", ({ gameId, move }) => {
-    console.log(`Client ${newClient.id} made move ${move} in game ${gameId}`);
-    newClient.to(gameId).emit("opponent move", { move });
+    const updatedGame = await GameModel.findById(gameId);
+
+    newClient
+      .to(gameId)
+      .emit("move_made", updatedGame && updatedGame.currentPlayer);
   });
 
   newClient.on("disconnect", () => {

@@ -4,131 +4,103 @@ import GameModel from "../models/games.js";
 import UserModel from "../models/users.js";
 import { jwtAuthMiddleware } from "../../auth/Auth.js";
 
+// -------------------------- ROUTER -------------------------------------
 const gamesRouter = express.Router();
 
-// Get games
+export default gamesRouter
 
-gamesRouter.get("/userGames", jwtAuthMiddleware, async (req, res, next) => {
-  try {
-    const games = await GameModel.find({
-      $or: [{ player1: req.user._id }, { player2: req.user._id }]
-    }).populate("player1 player2");
-    res.send(games);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Create game
-
-gamesRouter.post("/createGame", jwtAuthMiddleware, async (req, res, next) => {
-  try {
-    const { player2 } = req.body;
-    const player2User = await UserModel.findById(player2);
-    if (!player2User) {
-      return res.status(404).send({ error: "Player 2 not found" });
+  // -------------------------- GET USER GAMES -------------------------------------
+  .get("/userGames", jwtAuthMiddleware, async (req, res, next) => {
+    try {
+      const games = await GameModel.find({
+        $or: [{ player1: req.user?._id }, { player2: req.user?._id }]
+      }).populate("player1 player2");
+      res.send(games);
+    } catch (error) {
+      next(error);
     }
-    const existingGame = await GameModel.findOne({
-      $or: [
-        { player1: req.user._id, player2 },
-        { player1: player2, player2: req.user._id }
-      ]
-    });
+  })
 
-    if (existingGame) {
-      console.log("A game between these players already exists");
-      return res
-        .status(400)
-        .send({ error: "A game between these players already exists" });
+  // -------------------------- CREATE GAME -------------------------------------
+  .post("/createGame", jwtAuthMiddleware, async (req, res, next) => {
+    try {
+      const player2Id = req.body.player2;
+      console.log("player2id:", player2Id);
+      const player2User = await UserModel.findById(player2Id);
+      if (!player2User) {
+        console.log("player not found");
+        return res.status(404).send({ error: "Player 2 not found" });
+      }
+      const existingGame = await GameModel.findOne({
+        $or: [
+          { player1: req.user?._id, player2: player2Id },
+          { player1: player2Id, player2: req.user?._id }
+        ]
+      });
+
+      if (existingGame) {
+        console.log("A game between these players already exists");
+        return res
+          .status(400)
+          .send({ error: "A game between these players already exists" });
+      }
+
+      const newGame = new GameModel({
+        player1: req.user?._id,
+        player2: player2Id
+      });
+      const { _id } = await newGame.save();
+      res.status(201).send({ _id });
+      console.log(_id);
+    } catch (error) {
+      next(error);
     }
+  })
 
-    const newGame = new GameModel({ player1: req.user._id, player2 });
-    const { _id } = await newGame.save();
-    res.status(201).send({ _id });
-  } catch (error) {
-    next(error);
-  }
-});
+  // -------------------------- GET USER GAME BY ID -------------------------------------
+  .get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
+    console.log("Request received for game ID:", req.params.gameId);
+    try {
+      const game = await GameModel.findOne({
+        _id: req.params.gameId,
+        $or: [{ player1: req.user?._id }, { player2: req.user?._id }]
+      }).populate("player1 player2");
 
-// Get game by id
-
-gamesRouter.get("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
-  console.log("Request received for game ID:", req.params.gameId);
-  try {
-    const game = await GameModel.findOne({
-      _id: req.params.gameId,
-      $or: [{ player1: req.user._id }, { player2: req.user._id }]
-    }).populate("player1 player2");
-
-    if (game) {
-      res.send(game);
-    } else {
-      next(createError(404, "Game not found"));
+      if (game) {
+        res.send(game);
+      } else {
+        next(createError(404, "Game not found"));
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
-  }
-});
+  })
 
-//
+  // -------------------------- UPDATE GAME -------------------------------------
+  .put("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
+    try {
+      const game = await GameModel.findOne({
+        _id: req.params.gameId,
+        $or: [{ player1: req.user?._id }, { player2: req.user?._id }]
+      }).populate("player1 player2");
 
-// Update game by id
+      if (!game) {
+        next(createError(404, "Game not found"));
+        return;
+      }
+      const updatedGame = req.body;
 
-gamesRouter.put("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
-  try {
-    const game = await GameModel.findOne({
-      _id: req.params.gameId,
-      $or: [{ player1: req.user._id }, { player2: req.user._id }]
-    });
-
-    if (!game) {
-      next(createError(404, "Game not found"));
-      return;
+      if (game.player1._id.toString() === req.user?._id.toString()) {
+        updatedGame.currentPlayer = game.player2._id;
+      } else if (game.player2._id.toString() === req.user?._id.toString()) {
+        updatedGame.currentPlayer = game.player1._id;
+      }
+      console.log(updatedGame.currentPlayer);
+      Object.assign(game, updatedGame);
+      const savedGame = await game.save();
+      console.log("Game updated");
+      res.send(savedGame);
+    } catch (error) {
+      next(error);
     }
-
-    const currentPlayer =
-      game.currentPlayer.toString() === game.player1.toString()
-        ? game.player2
-        : game.player1;
-
-    if (
-      req.body.currentPlayer !==
-      (game.currentPlayer.color || req.body.currentPlayer)
-    ) {
-      next(createError(400, "Invalid current player value"));
-      return;
-    }
-
-    const updatedGame = await GameModel.findOneAndUpdate(
-      { _id: req.params.gameId },
-      { ...req.body, currentPlayer },
-      { new: true, runValidators: true }
-    );
-
-    res.send(updatedGame);
-    console.log("User successfully updated game");
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Delete game by id
-
-gamesRouter.delete("/:gameId", jwtAuthMiddleware, async (req, res, next) => {
-  try {
-    const deletedGame = await GameModel.findOneAndDelete({
-      _id: req.params.gameId,
-      $or: [{ player1: req.user._id }, { player2: req.user._id }]
-    });
-
-    if (deletedGame) {
-      res.send({ message: "Game deleted successfully" });
-    } else {
-      next(createError(404, "Game not found"));
-    }
-  } catch (error) {
-    next(error);
-  }
-});
-
-export default gamesRouter;
+  });
