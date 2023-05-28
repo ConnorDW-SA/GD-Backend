@@ -12,9 +12,12 @@ export default gamesRouter
   // -------------------------- GET USER GAMES -------------------------------------
   .get("/userGames", jwtAuthMiddleware, async (req, res, next) => {
     try {
-      const games = await GameModel.find({
-        $or: [{ player1: req.user?._id }, { player2: req.user?._id }]
-      }).populate("player1 player2");
+      const games = await GameModel.find(
+        {
+          $or: [{ player1: req.user?._id }, { player2: req.user?._id }]
+        },
+        { boardState: 0, currentPlayer: 0 }
+      ).populate("player1 player2");
       res.send(games);
     } catch (error) {
       next(error);
