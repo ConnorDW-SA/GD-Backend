@@ -67,7 +67,7 @@ export default gamesRouter
       const game = await GameModel.findOne({
         _id: req.params.gameId,
         $or: [{ player1: req.user?._id }, { player2: req.user?._id }]
-      }).populate("player1 player2");
+      }).populate("player1 player2 currentPlayer");
 
       if (game) {
         res.send(game);
@@ -98,7 +98,7 @@ export default gamesRouter
       } else if (game.player2._id.toString() === req.user?._id.toString()) {
         updatedGame.currentPlayer = game.player1._id;
       }
-      console.log(updatedGame.currentPlayer);
+
       Object.assign(game, updatedGame);
       const savedGame = await game.save();
       console.log("Game updated");
