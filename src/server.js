@@ -18,7 +18,7 @@ const httpServer = createServer(expressServer);
 const port = process.env.PORT || 3001;
 
 // ------------------------------ Socket.io ------------------------------
-export const io = new Server(httpServer, {
+const io = new Server(httpServer, {
   cors: {
     origin: "http://localhost:3000",
     methods: ["GET", "PUT", "POST"],
